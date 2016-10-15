@@ -99,6 +99,7 @@ extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
 
+//函数指针数组
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -123,6 +124,14 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 };
 
+
+//add by zhuangjian 
+char* syscall_name[] = {  "fork","exit","wait","pipe","read","kill","exec","fstat","chdir",
+                          "dup","getpid","sbrk","sleep","uptime","open","write","mknod","unlink",
+                          "link","mkdir","close" };
+
+
+
 void
 syscall(void)
 {
@@ -131,6 +140,7 @@ syscall(void)
   num = proc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     proc->tf->eax = syscalls[num]();
+    cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             proc->pid, proc->name, num);
