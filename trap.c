@@ -14,14 +14,15 @@ extern uint vectors[];  // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
 
+//设置中断处理程序入口, 中断处理锁初始化，处于解锁状态，占有中断处理锁的CPU数目为0
 void
 tvinit(void)
 {
   int i;
 
   for(i = 0; i < 256; i++)
-    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], 0);
-  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER);
+    SETGATE(idt[i], 0, SEG_KCODE<<3, vectors[i], 0); //see in mmu.h
+  SETGATE(idt[T_SYSCALL], 1, SEG_KCODE<<3, vectors[T_SYSCALL], DPL_USER); //T_SYSCALL see in traps.h
 
   initlock(&tickslock, "time");
 }

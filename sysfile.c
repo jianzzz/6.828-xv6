@@ -404,7 +404,7 @@ sys_exec(void)
   }
   memset(argv, 0, sizeof(argv));
   for(i=0;; i++){
-    if(i >= NELEM(argv))
+    if(i >= NELEM(argv)) //// number of elements in fixed-size array, see in defs.h
       return -1;
     if(fetchint(uargv+4*i, (int*)&uarg) < 0)
       return -1;

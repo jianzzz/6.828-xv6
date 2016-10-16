@@ -20,10 +20,11 @@ extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+//进程表锁初始化，设置进程表处于解锁状态，占有进程表锁的CPU数目为0
 void
 pinit(void)
 {
-  initlock(&ptable.lock, "ptable");
+  initlock(&ptable.lock, "ptable"); //see in spinlock.c
 }
 
 //PAGEBREAK: 32
@@ -31,6 +32,7 @@ pinit(void)
 // If found, change state to EMBRYO and initialize
 // state required to run in the kernel.
 // Otherwise return 0.
+//在进程表中寻找slot，成功的话更改进程状态和pid，并初始化进程的内核栈
 static struct proc*
 allocproc(void)
 {
@@ -84,12 +86,17 @@ userinit(void)
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
+  //在进程表中寻找slot，成功的话更改进程状态和pid，并初始化进程的内核栈
   p = allocproc();
   
   initproc = p;
-  if((p->pgdir = setupkvm()) == 0)
+  //为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
+  //实际上是创建二级页表，并在二级页表项上存储物理地址。
+  //页目录项所存页表的权限是用户可读写
+  if((p->pgdir = setupkvm()) == 0) //see in vm.c
     panic("userinit: out of memory?");
-  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
+  //todo..................权限
+  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);//see in vm.c
   p->sz = PGSIZE;
   memset(p->tf, 0, sizeof(*p->tf));
   p->tf->cs = (SEG_UCODE << 3) | DPL_USER;

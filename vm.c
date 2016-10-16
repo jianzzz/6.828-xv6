@@ -66,6 +66,9 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned.
+//根据给定的虚拟地址和范围，以及物理地址，按页大小将虚拟地址映射到物理地址上，
+//实际上是创建二级页表，并在二级页表项上存储物理地址。
+//页目录项所存页表的权限是用户可读写
 static int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
@@ -124,6 +127,9 @@ static struct kmap {
 };
 
 // Set up kernel part of a page table.
+//为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上
+//实际上是创建二级页表，并在二级页表项上存储物理地址。
+//页目录项所存页表的权限是用户可读写
 pde_t*
 setupkvm(void)
 {
@@ -144,6 +150,10 @@ setupkvm(void)
 
 // Allocate one page table for the machine for the kernel address
 // space for scheduler processes.
+//为scheduler进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
+//实际上是创建二级页表，并在二级页表项上存储物理地址。
+//页目录项所存页表的权限是用户可读写
+//将页目录地址存储到cr3中。
 void
 kvmalloc(void)
 {

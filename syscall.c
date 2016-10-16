@@ -14,6 +14,7 @@
 // to a saved program counter, and then the first argument.
 
 // Fetch the int at addr from the current process.
+// 给定一个地址, 获取该地址上的int值
 int
 fetchint(uint addr, int *ip)
 {
@@ -26,6 +27,7 @@ fetchint(uint addr, int *ip)
 // Fetch the nul-terminated string at addr from the current process.
 // Doesn't actually copy the string - just sets *pp to point at it.
 // Returns length of string, not including nul.
+// 给定一个起始地址值，获取从起始地址值到进程memory size的连续字符串
 int
 fetchstr(uint addr, char **pp)
 {
@@ -42,6 +44,7 @@ fetchstr(uint addr, char **pp)
 }
 
 // Fetch the nth 32-bit system call argument.
+// 获取第n个32-bit参数
 int
 argint(int n, int *ip)
 {
@@ -51,6 +54,7 @@ argint(int n, int *ip)
 // Fetch the nth word-sized system call argument as a pointer
 // to a block of memory of size bytes.  Check that the pointer
 // lies within the process address space.
+// 获取第n个32-bit参数, 将参数值转换为指针，需要检查参数值是否满足size大小的内存块要求，即是否超出进程内存范围，猜测该参数存储的是内存地址
 int
 argptr(int n, char **pp, int size)
 {
@@ -68,6 +72,7 @@ argptr(int n, char **pp, int size)
 // Check that the pointer is valid and the string is nul-terminated.
 // (There is no shared writable memory, so the string can't change
 // between this check and being used by the kernel.)
+// 获取第n个32-bit参数, 该参数作为起始地址值，获取从起始地址值到进程memory size的连续字符串
 int
 argstr(int n, char **pp)
 {
@@ -135,12 +140,11 @@ char* syscall_name[] = {  "fork","exit","wait","pipe","read","kill","exec","fsta
 void
 syscall(void)
 {
-  int num;
-
+  int num; 
   num = proc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     proc->tf->eax = syscalls[num]();
-    cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
+    //cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             proc->pid, proc->name, num);

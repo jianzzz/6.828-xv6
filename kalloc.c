@@ -27,6 +27,8 @@ struct {
 // the pages mapped by entrypgdir on free list.
 // 2. main() calls kinit2() with the rest of the physical pages
 // after installing a full page table that maps them on all cores.
+//将[end，4M](end先4K对齐)范围free为kmem，此时未开启分页，使用的是硬编码的4m地址映射。
+//kmem锁初始化，处于解锁状态，占有kmem锁的CPU数目为0
 void
 kinit1(void *vstart, void *vend)
 {
@@ -34,7 +36,8 @@ kinit1(void *vstart, void *vend)
   kmem.use_lock = 0;
   freerange(vstart, vend);
 }
-
+//将[4M,PHYSTOP]范围free为kmem，此时已经开启分页。
+//设置计数表示kmem锁处于使用状态
 void
 kinit2(void *vstart, void *vend)
 {
