@@ -32,7 +32,7 @@ pinit(void)
 // If found, change state to EMBRYO and initialize
 // state required to run in the kernel.
 // Otherwise return 0.
-//在进程表中寻找slot，成功的话更改进程状态和pid，并初始化进程的内核栈
+//在进程表中寻找slot，成功的话更改进程状态embryo和pid，并初始化进程的内核栈
 static struct proc*
 allocproc(void)
 {
@@ -93,14 +93,17 @@ userinit(void)
   //为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
   //实际上是创建二级页表，并在二级页表项上存储物理地址。
   //页目录项所存页表的权限是用户可读写
+  //二级页表项所存物理页的权限按照kmap设定
   if((p->pgdir = setupkvm()) == 0) //see in vm.c
-    panic("userinit: out of memory?");
-  //todo..................权限
+    panic("userinit: out of memory?"); 
+  //从kmem上分配一页的物理空间给进程，在新建进程的页目录上映射[0,PGSIZE]的虚拟地址到分配的物理地址上，将init指针指向的内容复制到mem物理内存上
+  //页目录项所存页表的权限是用户可读写
+  //二级页表项所存物理页的权限为用户可读写
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);//see in vm.c
   p->sz = PGSIZE;
   memset(p->tf, 0, sizeof(*p->tf));
-  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
-  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+  p->tf->cs = (SEG_UCODE << 3) | DPL_USER; // todo ???
+  p->tf->ds = (SEG_UDATA << 3) | DPL_USER; // todo ???
   p->tf->es = p->tf->ds;
   p->tf->ss = p->tf->ds;
   p->tf->eflags = FL_IF;
@@ -290,6 +293,7 @@ scheduler(void)
 
   for(;;){
     // Enable interrupts on this processor.
+    //进程开中断
     sti();
 
     // Loop over process table looking for process to run.
@@ -301,11 +305,15 @@ scheduler(void)
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+      //更新全局变量proc为当前被选中的进程
       proc = p;
-      switchuvm(p);
+      //设置cpu环境后，加载选中进程的页目录地址到cr3,切换为进程的页目录
+      switchuvm(p); //see in vm.c
+      //更改进程状态为running
       p->state = RUNNING;
-      swtch(&cpu->scheduler, p->context);
-      switchkvm();
+      swtch(&cpu->scheduler, p->context); //see in swtch.S
+      //加载内核的页目录地址到cr3,切换为内核的页目录
+      switchkvm(); //see in vm.c
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.

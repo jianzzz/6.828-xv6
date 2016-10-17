@@ -24,6 +24,7 @@ main(void)
   //为scheduler进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
   //实际上是创建二级页表，并在二级页表项上存储物理地址。将页目录地址存储到cr3中。
   //页目录项所存页表的权限是用户可读写
+  //二级页表项所存物理页的权限按照kmap设定
   kvmalloc();      // kernel page table //see in vm.c
   //
   mpinit();        // detect other processors
@@ -42,7 +43,7 @@ main(void)
   uartinit();      // serial port
   //进程表锁初始化，设置进程表处于解锁状态，占有进程表锁的CPU数目为0
   pinit();         // process table //see in proc.c
-  //设置中断处理程序入口,中断处理锁初始化，处于解锁状态，占有中断处理锁的CPU数目为0
+  //建立正常的中断/陷阱门描述符,中断处理锁初始化，处于解锁状态，占有中断处理锁的CPU数目为0
   tvinit();        // trap vectors //see in trap.c
   //
   binit();         // buffer cache
@@ -58,8 +59,31 @@ main(void)
   //将[4M,PHYSTOP]范围free为kmem，此时已经开启分页。
   //设置计数表示kmem锁处于使用状态
   kinit2(P2V(4*1024*1024), P2V(PHYSTOP)); // must come after startothers() // see in kalloc.c
-  //
-  userinit();      // first user process  //see in proc.c
+
+  //1.
+  //在进程表中寻找slot，成功的话更改进程状态embryo和pid，并初始化进程的内核栈
+  //2.
+  //为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
+  //实际上是创建二级页表，并在二级页表项上存储物理地址。
+  //页目录项所存页表的权限是用户可读写
+  //二级页表项所存物理页的权限按照kmap设定
+  //3.
+  //从kmem上分配一页的物理空间给进程，在新建进程的页目录上映射[0,PGSIZE]的虚拟地址到分配的物理地址上，将init指针指向的内容复制到mem物理内存上
+  //页目录项所存页表的权限是用户可读写
+  //二级页表项所存物理页的权限为用户可读写
+  //4.
+  //设置进程的trapframe
+  //设置进程状态runnable
+  userinit();      // first user process  //see in proc.c 
+  //idtinit()加载中断描述符表寄存器
+  //scheduler()无限循环寻找进程状态为runnable的进程
+  //对于每次循环：
+      //开中断运行当前进程
+      //找到可执行的进程后，更新全局变量proc为当前被选中的进程
+      //设置cpu环境后，加载选中进程的页目录地址到cr3,切换为进程的页目录
+      //更改进程状态为running
+      //CPU调度
+      //加载内核的页目录地址到cr3,切换为内核的页目录
   mpmain();        // finish this processor's setup
 }
 
@@ -74,13 +98,23 @@ mpenter(void)
 }
 
 // Common CPU setup code.
+//idtinit()加载中断描述符表寄存器
+//scheduler()无限循环寻找进程状态为runnable的进程
+//对于每次循环：
+    //开中断运行当前进程
+    //找到可执行的进程后，更新全局变量proc为当前被选中的进程
+    //设置cpu环境后，加载选中进程的页目录地址到cr3,切换为进程的页目录
+    //更改进程状态为running
+    //CPU调度
+    //加载内核的页目录地址到cr3,切换为内核的页目录
 static void
 mpmain(void)
 {
   cprintf("cpu%d: starting\n", cpunum());
-  idtinit();       // load idt register
-  xchg(&cpu->started, 1); // tell startothers() we're up
-  scheduler();     // start running processes
+  //加载中断描述符表寄存器
+  idtinit();       // load idt register //see in trap.c
+  xchg(&cpu->started, 1); // tell startothers() we're up //see in x86.h
+  scheduler();     // start running processes //see in proc.c
 }
 
 pde_t entrypgdir[];  // For entry.S

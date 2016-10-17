@@ -14,7 +14,7 @@ extern uint vectors[];  // in vectors.S: array of 256 entry pointers
 struct spinlock tickslock;
 uint ticks;
 
-//设置中断处理程序入口, 中断处理锁初始化，处于解锁状态，占有中断处理锁的CPU数目为0
+//建立正常的中断/陷阱门描述符, 中断处理锁初始化，处于解锁状态，占有中断处理锁的CPU数目为0
 void
 tvinit(void)
 {
@@ -27,10 +27,11 @@ tvinit(void)
   initlock(&tickslock, "time");
 }
 
+//加载中断描述符表寄存器
 void
 idtinit(void)
 {
-  lidt(idt, sizeof(idt));
+  lidt(idt, sizeof(idt)); // see in x86.h
 }
 
 //PAGEBREAK: 41

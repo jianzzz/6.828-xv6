@@ -129,7 +129,7 @@ static struct kmap {
 // Set up kernel part of a page table.
 //为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上
 //实际上是创建二级页表，并在二级页表项上存储物理地址。
-//页目录项所存页表的权限是用户可读写
+//页目录项所存页表的权限是用户可读写,二级页表项所存物理页的权限按照kmap设定
 pde_t*
 setupkvm(void)
 {
@@ -153,6 +153,7 @@ setupkvm(void)
 //为scheduler进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
 //实际上是创建二级页表，并在二级页表项上存储物理地址。
 //页目录项所存页表的权限是用户可读写
+//二级页表项所存物理页的权限按照kmap设定
 //将页目录地址存储到cr3中。
 void
 kvmalloc(void)
@@ -170,6 +171,7 @@ switchkvm(void)
 }
 
 // Switch TSS and h/w page table to correspond to process p.
+// 设置cpu环境后，加载进程的页目录地址到cr3
 void
 switchuvm(struct proc *p)
 {
@@ -190,6 +192,9 @@ switchuvm(struct proc *p)
 
 // Load the initcode into address 0 of pgdir.
 // sz must be less than a page.
+//从kmem上分配一页的物理空间给进程，在新建进程的页目录上映射[0,PGSIZE]的虚拟地址到分配的物理地址上，将init指针指向的内容复制到mem物理内存上
+//页目录项所存页表的权限是用户可读写
+//二级页表项所存物理页的权限为用户可读写
 void
 inituvm(pde_t *pgdir, char *init, uint sz)
 {
@@ -200,7 +205,7 @@ inituvm(pde_t *pgdir, char *init, uint sz)
   mem = kalloc();
   memset(mem, 0, PGSIZE);
   mappages(pgdir, 0, PGSIZE, V2P(mem), PTE_W|PTE_U);
-  memmove(mem, init, sz);
+  memmove(mem, init, sz); // see in ulib.c
 }
 
 // Load a program segment into pgdir.  addr must be page-aligned
