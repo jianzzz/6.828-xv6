@@ -90,13 +90,15 @@ userinit(void)
   p = allocproc();
   
   initproc = p;
-  //为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
+  //为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址
+  //(从KERNBASE开始,把IO空间、内核镜像等都建立映射，这些空间全都是用户空间可见的，位于2GB以上)按页大小映射到物理地址上，
   //实际上是创建二级页表，并在二级页表项上存储物理地址。
+  //每个进程都会新建页目录和二级页表
   //页目录项所存页表的权限是用户可读写
   //二级页表项所存物理页的权限按照kmap设定
   if((p->pgdir = setupkvm()) == 0) //see in vm.c
     panic("userinit: out of memory?"); 
-  //从kmem上分配一页的物理空间给进程，在新建进程的页目录上映射[0,PGSIZE]的虚拟地址到分配的物理地址上，将init指针指向的内容复制到mem物理内存上
+  //从kmem上分配一页的物理空间给进程，在新建进程的页目录上映射[0,PGSIZE]的虚拟地址到分配的物理地址上，将指向内容复制到物理内存上
   //页目录项所存页表的权限是用户可读写
   //二级页表项所存物理页的权限为用户可读写
   inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);//see in vm.c

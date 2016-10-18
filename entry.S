@@ -65,4 +65,4 @@ entry:
   mov $main, %eax
   jmp *%eax
 
-.comm stack, KSTACKSIZE
+.comm stack, KSTACKSIZE #The '.comm' directive allocates storage in the data section.

@@ -26,7 +26,7 @@ alltraps:
   # Return falls through to trapret...
 .globl trapret
 trapret:
-  popal
+  popal #弹出通用寄存器中的上下文环境
   popl %gs
   popl %fs
   popl %es

@@ -22,7 +22,7 @@ seginit(void)
   // because it would have to have DPL_USR, but the CPU forbids
   // an interrupt from CPL=0 to DPL=3.
   c = &cpus[cpunum()];
-  c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0);
+  c->gdt[SEG_KCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, 0); //see in mmu.h
   c->gdt[SEG_KDATA] = SEG(STA_W, 0, 0xffffffff, 0);
   c->gdt[SEG_UCODE] = SEG(STA_X|STA_R, 0, 0xffffffff, DPL_USER);
   c->gdt[SEG_UDATA] = SEG(STA_W, 0, 0xffffffff, DPL_USER);
@@ -127,7 +127,8 @@ static struct kmap {
 };
 
 // Set up kernel part of a page table.
-//为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上
+//为进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址
+//(从KERNBASE开始,把IO空间、内核镜像等都建立映射，这些空间全都是用户空间可见的，位于2GB以上)按页大小映射到物理地址上，
 //实际上是创建二级页表，并在二级页表项上存储物理地址。
 //页目录项所存页表的权限是用户可读写,二级页表项所存物理页的权限按照kmap设定
 pde_t*
@@ -150,8 +151,10 @@ setupkvm(void)
 
 // Allocate one page table for the machine for the kernel address
 // space for scheduler processes.
-//为scheduler进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址(从KERNBASE开始)按页大小映射到物理地址上，
+//为scheduler进程创建内核页目录，根据kmap设定将所有涉及范围内的内核空间虚拟地址
+//(从KERNBASE开始,把IO空间、内核镜像等都建立映射，这些空间全都是用户空间可见的，位于2GB以上)按页大小映射到物理地址上，
 //实际上是创建二级页表，并在二级页表项上存储物理地址。
+//每个进程都会新建页目录和二级页表
 //页目录项所存页表的权限是用户可读写
 //二级页表项所存物理页的权限按照kmap设定
 //将页目录地址存储到cr3中。
