@@ -31,8 +31,8 @@ main(void)
   //
   mpinit();        // detect other processors
   lapicinit();     // interrupt controller
-  //
-  seginit();       // segment descriptors
+  //更新当前cpu
+  seginit();       // segment descriptors // see in vm.c
   //
   cprintf("\ncpu%d: starting xv6\n\n", cpunum());
   //
