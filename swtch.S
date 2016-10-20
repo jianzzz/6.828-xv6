@@ -17,8 +17,8 @@ swtch:
   pushl %edi
 
   # Switch stacks
-  movl %esp, (%eax)
-  movl %edx, %esp
+  movl %esp, (%eax)# %esp此时执行上面四个寄存器信息，现在给cpu的context变量赋值
+  movl %edx, %esp# %esp指向新的proc的context，上图中的p->context
 
   # Load new callee-save registers
   popl %edi
