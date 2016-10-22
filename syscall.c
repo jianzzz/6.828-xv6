@@ -44,7 +44,7 @@ fetchstr(uint addr, char **pp)
 }
 
 // Fetch the nth 32-bit system call argument.
-// 获取第n个32-bit参数
+// 获取第n个32-bit参数,proc->tf->esp指向的值为caller的pc值（initcode.S设为0）
 int
 argint(int n, int *ip)
 {
@@ -144,6 +144,7 @@ syscall(void)
   num = proc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     proc->tf->eax = syscalls[num]();
+    cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
     //cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
   } else {
     cprintf("%d %s: unknown sys call %d\n",
