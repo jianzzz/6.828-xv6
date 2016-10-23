@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+//get the current UTC time and return it to the user program
+int
+sys_date(void)
+{
+  struct rtcdate *pr;
+  if (argptr(0, (void*)&pr, sizeof(struct rtcdate)) < 0) {
+    return -1;
+  }
+  cmostime(pr);
+  return 0;
+}

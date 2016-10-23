@@ -14,7 +14,8 @@
 // to a saved program counter, and then the first argument.
 
 // Fetch the int at addr from the current process.
-// 给定一个地址, 获取该地址上的int值
+// 给定一个进程用户空间地址，获取该地址上的int值。
+// 进程可能设置tf->esp指向用户空间，因此给定的可以是栈地址，则取出的值很大程度上是作为地址值。
 int
 fetchint(uint addr, int *ip)
 {
@@ -27,7 +28,7 @@ fetchint(uint addr, int *ip)
 // Fetch the nul-terminated string at addr from the current process.
 // Doesn't actually copy the string - just sets *pp to point at it.
 // Returns length of string, not including nul.
-// 给定一个起始地址值，获取从起始地址值到进程memory size的连续字符串
+// 给定一个进程用户空间起始地址值，使用char*指针指向它，函数本身返回字符串长度。
 int
 fetchstr(uint addr, char **pp)
 {
@@ -44,17 +45,18 @@ fetchstr(uint addr, char **pp)
 }
 
 // Fetch the nth 32-bit system call argument.
-// 获取第n个32-bit参数,proc->tf->esp指向的值为caller的pc值（initcode.S设为0）
+// 获取tf->esp起的第n个32-bit参数,proc->tf->esp指向的值为caller的pc值（initcode.S设为0）,应忽略
 int
 argint(int n, int *ip)
 {
-  return fetchint(proc->tf->esp + 4 + 4*n, ip);
+  return fetchint(proc->tf->esp + 4 + 4*n, ip); 
 }
 
 // Fetch the nth word-sized system call argument as a pointer
 // to a block of memory of size bytes.  Check that the pointer
 // lies within the process address space.
-// 获取第n个32-bit参数, 将参数值转换为指针，需要检查参数值是否满足size大小的内存块要求，即是否超出进程内存范围，猜测该参数存储的是内存地址
+// 获取tf->esp起的第n个32-bit参数, 该参数存储的是虚拟地址，
+// 需要根据size检查是否超出进程用户空间地址范围, 使用指针指向该地址 
 int
 argptr(int n, char **pp, int size)
 {
@@ -72,14 +74,14 @@ argptr(int n, char **pp, int size)
 // Check that the pointer is valid and the string is nul-terminated.
 // (There is no shared writable memory, so the string can't change
 // between this check and being used by the kernel.)
-// 获取第n个32-bit参数, 该参数作为起始地址值，获取从起始地址值到进程memory size的连续字符串
+// 获取tf->esp起的第n个32-bit参数, 该参数是字符串起始地址值，使用char*指针指向它，函数本身返回字符串长度。
 int
 argstr(int n, char **pp)
 {
   int addr;
   if(argint(n, &addr) < 0)
     return -1;
-  return fetchstr(addr, pp);
+  return fetchstr(addr, pp); 
 }
 
 extern int sys_chdir(void);
@@ -103,6 +105,7 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
+extern int sys_date(void);
 
 //函数指针数组
 static int (*syscalls[])(void) = {
@@ -127,13 +130,14 @@ static int (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_date]   sys_date,
 };
 
 
 //add by zhuangjian 
-char* syscall_name[] = {  "fork","exit","wait","pipe","read","kill","exec","fstat","chdir",
+const char* syscall_name[] = {  "fork","exit","wait","pipe","read","kill","exec","fstat","chdir",
                           "dup","getpid","sbrk","sleep","uptime","open","write","mknod","unlink",
-                          "link","mkdir","close" };
+                          "link","mkdir","close","date" };
 
 
 
@@ -144,7 +148,9 @@ syscall(void)
   num = proc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     proc->tf->eax = syscalls[num]();
-    cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
+    
+    //trapno放到%eax里面,系统调用的执行结果也放在了eax中
+    //打印系统调用名称和结果
     //cprintf("\n%s -> %d\n", syscall_name[num], proc->tf->eax);
   } else {
     cprintf("%d %s: unknown sys call %d\n",
