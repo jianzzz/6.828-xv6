@@ -65,6 +65,48 @@ sys_dup(void)
   return fd;
 }
 
+//add by jianzzz
+int
+sys_dup2(void)
+{
+    struct file *oldfile, *newfile;
+    int newfd;
+    //取出第一个参数fd，其应该对应到一个file对象
+    if (argfd(0, 0, &oldfile) < 0) {
+        return -1;
+    }
+    //取出第二个参数fd
+    if (argint(1, &newfd) < 0) {
+        return -1;
+    }
+    if(newfd < 0 || newfd >= NOFILE) {
+        return -1;
+    }
+
+    //newfd文件描述符没有对应的file对象，可以安全使用，使新旧fd指向同一个file对象
+    if (proc->ofile[newfd] == 0) { 
+        goto final;
+    } else if (argfd(1, &newfd, &newfile) < 0) { //newfd文件描述符有对应的file对象,取出file对象
+        return -1;
+    }
+    //两个fd指向同个file对象，返回 
+    if (oldfile == newfile) {
+        return newfd;
+    }
+    //关闭文件
+    if (newfile->ref > 0) {
+        fileclose(newfile);
+    }
+
+
+final:
+    proc->ofile[newfd] = oldfile;
+    filedup(oldfile);
+
+    return newfd;
+}
+
+
 int
 sys_read(void)
 {

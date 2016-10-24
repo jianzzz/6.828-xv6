@@ -23,7 +23,9 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+//add by jianzzz
 int date(struct rtcdate *r);
+int dup2(int,int);
 
 // ulib.c
 int stat(char*, struct stat*);
