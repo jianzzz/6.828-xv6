@@ -97,8 +97,7 @@ sys_dup2(void)
     if (newfile->ref > 0) {
         fileclose(newfile);
     }
-
-
+ 
 final:
     proc->ofile[newfd] = oldfile;
     filedup(oldfile);

@@ -2,10 +2,8 @@
  * Tests the functionality of the `dup2` system call. The first argument is the
  * original file the we are duplicating. If a second argument is passed in we
  * open this file, write a string to it, then duplicate it. This tests that our
- * kernel is properly closing and duplicating the file. If the second argument
- * is not passed in, we simply duplicate the original file to descriptor 10. In
- * both cases the original file should have the string "foobar\n". If not, then
- * something went wrong
+ * kernel is properly closing and duplicating the file. In both cases the original 
+ * file should have the string "foobar\n". If not, then something went wrong 
  */
 
 #include "types.h"
@@ -15,7 +13,7 @@
 
 int
 main(int argc, char *argv[]) {
-    int origfd, newfd;
+    int origfd, newfd = 0;
 
     if (argc < 2) {
       printf(2, "%s: Not enough arguments\n", argv[0]);
@@ -26,19 +24,17 @@ main(int argc, char *argv[]) {
     unlink(argv[1]);
 
     if ((origfd = open(argv[1], O_CREATE|O_RDWR)) < 0) {
-      printf(2, "Cannot open '%s'\n", argv[2]);
+      printf(2, "Cannot open '%s'\n", argv[1]);
       exit();
-    }
+    } 
     if (argc > 2) {
-      unlink(argv[3]);
+      unlink(argv[2]);
       if ((newfd = open(argv[2], O_CREATE|O_RDWR)) < 0) {
-          printf(2, "Cannot open '%s'\n", argv[3]);
+          printf(2, "Cannot open '%s'\n", argv[2]);
           exit();
-      }
+      } 
       write(newfd, "ignored\n", 8);
-    } else {
-      newfd = 10;
-    }
+    }  
 
     write(origfd, "foo", 3);
     if (dup2(origfd, newfd) < 0) {
@@ -46,6 +42,8 @@ main(int argc, char *argv[]) {
     }
 
     write(newfd, "bar\n", 4);
+    close(origfd);
+    close(newfd);
 
     exit();
 }
