@@ -13,24 +13,23 @@
 
 int
 main(int argc, char *argv[]) {
-    int origfd, newfd = 0;
-
+    int origfd, newfd = 0; 
     if (argc < 2) {
-      printf(2, "%s: Not enough arguments\n", argv[0]);
-      printf(2, "Usage: origfile [newfile]\n");
+      printf(1, "%s: Not enough arguments\n", argv[0]);
+      printf(1, "Usage: origfile [newfile]\n");
       exit();
     }
 
     unlink(argv[1]);
 
     if ((origfd = open(argv[1], O_CREATE|O_RDWR)) < 0) {
-      printf(2, "Cannot open '%s'\n", argv[1]);
+      printf(1, "Cannot open '%s'\n", argv[1]);
       exit();
     } 
     if (argc > 2) {
       unlink(argv[2]);
       if ((newfd = open(argv[2], O_CREATE|O_RDWR)) < 0) {
-          printf(2, "Cannot open '%s'\n", argv[2]);
+          printf(1, "Cannot open '%s'\n", argv[2]);
           exit();
       } 
       write(newfd, "ignored\n", 8);
@@ -38,12 +37,20 @@ main(int argc, char *argv[]) {
 
     write(origfd, "foo", 3);
     if (dup2(origfd, newfd) < 0) {
-        printf(2, "dup2 error\n");
+        printf(1, "dup2 error\n");
     }
 
     write(newfd, "bar\n", 4);
+
     close(origfd);
     close(newfd);
+    if ((newfd = open(argv[1], O_RDWR)) < 0) {
+      printf(1, "Cannot open '%s'\n", argv[2]);
+      exit();
+    } 
+    char buf[256];
+    int n = read(newfd,buf,256);
+    printf(1, "%d: %s\n", n,buf);
 
     exit();
 }
