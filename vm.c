@@ -237,6 +237,8 @@ loaduvm(pde_t *pgdir, char *addr, struct inode *ip, uint offset, uint sz)
 
 // Allocate page tables and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
+//将oldsz（虚拟地址）4K对齐，如果对齐后小于newsz（虚拟地址），则按照4K大小循环分配物理页给进程，
+//并映射虚拟地址到新分配的物理页地址上，直至超出newsz范围。如果对齐后大于newsz，说明newsz的空间已经分配过了。
 int
 allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 {

@@ -507,6 +507,9 @@ namecmp(const char *s, const char *t)
 
 // Look for a directory entry in a directory.
 // If found, set *poff to byte offset of entry.
+//从形参inode（如'/'对应的inode）关联的资源里依次读取dirent，如果dirent的name等同于形参name，
+//则存取当前inode资源的offest，并由dirent获得目标inode的number，
+//根据形参inode的device number和新的inode number，返回对应的inode
 struct inode*
 dirlookup(struct inode *dp, char *name, uint *poff)
 {
@@ -578,6 +581,7 @@ dirlink(struct inode *dp, char *name, uint inum)
 //   skipelem("a", name) = "", setting name = "a"
 //   skipelem("", name) = skipelem("////", name) = 0
 //
+//取出当前path从'/'到下一个'/'或结束符位置之间的路径名，存于name中，path指针指向下一个‘/’之后的位置
 static char*
 skipelem(char *path, char *name)
 {
@@ -613,11 +617,11 @@ namex(char *path, int nameiparent, char *name)
   struct inode *ip, *next;
 
   if(*path == '/')
-    ip = iget(ROOTDEV, ROOTINO);
+    ip = iget(ROOTDEV, ROOTINO);//获取根路径对应的inode
   else
     ip = idup(proc->cwd);
 
-  while((path = skipelem(path, name)) != 0){
+  while((path = skipelem(path, name)) != 0){//skipelem:取出当前path从'/'到下一个'/'或结束符位置之间的路径名，存于name中，path指针指向下一个‘/’之后的位置
     ilock(ip);
     if(ip->type != T_DIR){
       iunlockput(ip);
@@ -628,7 +632,7 @@ namex(char *path, int nameiparent, char *name)
       iunlock(ip);
       return ip;
     }
-    if((next = dirlookup(ip, name, 0)) == 0){
+    if((next = dirlookup(ip, name, 0)) == 0){//寻找name对应的inode
       iunlockput(ip);
       return 0;
     }

@@ -113,7 +113,7 @@ userinit(void)
   p->tf->eip = 0;  // beginning of initcode.S
 
   safestrcpy(p->name, "initcode", sizeof(p->name));
-  p->cwd = namei("/");
+  p->cwd = namei("/");//获取根路径对应的inode,see in fs.c
 
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above

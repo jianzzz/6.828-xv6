@@ -20,7 +20,7 @@ exec(char *path, char **argv)
 
   begin_op();
 
-  if((ip = namei(path)) == 0){
+  if((ip = namei(path)) == 0){//寻找name对应的inode
     end_op();
     return -1;
   }
@@ -28,17 +28,21 @@ exec(char *path, char **argv)
   pgdir = 0;
 
   // Check ELF header
-  if(readi(ip, (char*)&elf, 0, sizeof(elf)) < sizeof(elf))
+  //读取程序的elf
+  if(readi(ip, (char*)&elf, 0, sizeof(elf)) < sizeof(elf))// Read data from inode.
     goto bad;
   if(elf.magic != ELF_MAGIC)
     goto bad;
-
+  //创建内核页目录，映射内核空间。实际上是创建二级页表，并在二级页表项上存储物理地址。
+  //页目录项所存页表的权限是用户可读写,二级页表项所存物理页的权限按照kmap设定
   if((pgdir = setupkvm()) == 0)
     goto bad;
 
   // Load program into memory.
+  //根据inode和elf程序头表偏移量, 按段读取程序
   sz = 0;
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
+    //读取段的程序头表项
     if(readi(ip, (char*)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
     if(ph.type != ELF_PROG_LOAD)
@@ -47,10 +51,13 @@ exec(char *path, char **argv)
       goto bad;
     if(ph.vaddr + ph.memsz < ph.vaddr)
       goto bad;
+    //根据段的虚拟地址及段占据的内存大小分配物理空间,该过程会将程序的虚拟地址映射到分配到的物理页地址上
+    //二级页表项所存物理页的权限是用户可读写
     if((sz = allocuvm(pgdir, sz, ph.vaddr + ph.memsz)) == 0)
       goto bad;
     if(ph.vaddr % PGSIZE != 0)
       goto bad;
+    //根据程序头表项信息读取段到内存中
     if(loaduvm(pgdir, (char*)ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
   }
@@ -61,6 +68,8 @@ exec(char *path, char **argv)
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
   sz = PGROUNDUP(sz);
+  //继续为程序分配两页物理空间,二级页表项所存物理页的权限是用户可读写
+  //取消第一页用户可读写权限，第二页作为用户栈
   if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
     goto bad;
   clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
