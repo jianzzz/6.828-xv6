@@ -106,7 +106,7 @@ exec(char *path, char **argv)
   proc->sz = sz;
   proc->tf->eip = elf.entry;  // main
   proc->tf->esp = sp;
-  switchuvm(proc);
+  switchuvm(proc);//设置cpu环境后，加载进程的页目录地址到cr3
   freevm(oldpgdir);
   return 0;
 
