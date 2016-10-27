@@ -333,6 +333,9 @@ clearpteu(pde_t *pgdir, char *uva)
 
 // Given a parent process's page table, create a copy
 // of it for a child.
+//copy一个进程的页目录对应的所有内容，思路是：首先创建新的页目录；
+//在进程的用户空间虚拟地址范围内，由虚拟地址0x0开始，取得映射的物理页地址，然后申请新的物理页，将前者内容copy到后者；
+//取出二级页表项的flag，当前虚拟地址映射到新物理页地址，其二级页表项权限设为flag。
 pde_t*
 copyuvm(pde_t *pgdir, uint sz)
 {

@@ -156,28 +156,33 @@ fork(void)
   struct proc *np;
 
   // Allocate process.
+  //在进程表中寻找slot，成功的话更改进程状态和pid，并初始化进程的内核栈
+  //注意子进程使用的是新的内核栈
   if((np = allocproc()) == 0){
     return -1;
   }
 
   // Copy process state from p.
-  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){
+  //copy一个进程的页目录对应的所有内容，思路是：首先创建新的页目录；
+  //在进程的用户空间虚拟地址范围内，由虚拟地址0x0开始，取得映射的物理页地址，然后申请新的物理页，将前者内容copy到后者；
+  //取出二级页表项的flag，当前虚拟地址映射到新物理页地址，其二级页表项权限设为flag。
+  if((np->pgdir = copyuvm(proc->pgdir, proc->sz)) == 0){ //see in vm.c
     kfree(np->kstack);
     np->kstack = 0;
     np->state = UNUSED;
     return -1;
   }
-  np->sz = proc->sz;
-  np->parent = proc;
-  *np->tf = *proc->tf;
+  np->sz = proc->sz; //设置进程的用户空间范围
+  np->parent = proc; //设置进程的父进程
+  *np->tf = *proc->tf; //设置进程的tramframe,这是结构体的值传递???
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
-
+  //复制fd 
   for(i = 0; i < NOFILE; i++)
     if(proc->ofile[i])
       np->ofile[i] = filedup(proc->ofile[i]);
-  np->cwd = idup(proc->cwd);
+  np->cwd = idup(proc->cwd);//复制当前目录
 
   safestrcpy(np->name, proc->name, sizeof(proc->name));
 
@@ -185,11 +190,16 @@ fork(void)
 
   acquire(&ptable.lock);
 
-  np->state = RUNNABLE;
+  np->state = RUNNABLE;//父进程必须在子进程的所有内容设置完毕后，才改为runnable，才能被cpu调度
 
   release(&ptable.lock);
 
   return pid;
+  //对于父进程而言，其系统调用的结果（子进程的pid）将在syscall.c中赋值到tf->eax中，
+  //然后在trapasm.S中弹出到eax，最终被用户进程获取。
+  //对于子进程而言，其复制了父进程的用户空间内容（包括代码），并使用新的内核栈，
+  //内核栈中trapframe的内容复制于父进程（包括下一条指令的eip，这条指令往往是操作系统调用结果--eax），
+  //并将eax的值改为0，这样子当cpu调度到子进程的时候，其实就是执行eip的指令，所以获取到的pid是0。
 }
 
 // Exit the current process.  Does not return.

@@ -74,6 +74,8 @@ printf(int fd, char *fmt, ...)
         ap++;
       } else if(c == '%'){
         putc(fd, c);
+        //add by jianzzz
+        continue;//I think printf("%%d",1) should print '%1' but not '%d'
       } else {
         // Unknown % sequence.  Print it to draw attention.
         putc(fd, '%');
