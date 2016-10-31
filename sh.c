@@ -307,6 +307,8 @@ gettoken(char **ps, char *es, char **q, char **eq)
   return ret;
 }
 
+//更新ps指向的字符串(跳过空白字符)。如果*s不是'\0'且我们可以在toks字符串中找到*s,返回1(strchr本身返回字符指针,指向第一个找到的元素)
+//否则返回0
 int
 peek(char **ps, char *es, char *toks)
 {
