@@ -196,7 +196,6 @@ struct cmd*
 execcmd(void)
 {
   struct execcmd *cmd;
-
   cmd = malloc(sizeof(*cmd));
   memset(cmd, 0, sizeof(*cmd));
   cmd->type = EXEC;
