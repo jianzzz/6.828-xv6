@@ -55,9 +55,7 @@ morecore(uint nu)
   if(p == (char*)-1)
     return 0;
   hp = (Header*)p;
-printf(2,"test%d............\n", p );
-  hp->s.size = nu;
-printf(2,"test............\n");
+  hp->s.size = nu; 
   free((void*)(hp + 1));
   return freep;
 }
@@ -75,12 +73,12 @@ malloc(uint nbytes)
   }
   for(p = prevp->s.ptr; ; prevp = p, p = p->s.ptr){
     if(p->s.size >= nunits){
-      if(p->s.size == nunits)
-        prevp->s.ptr = p->s.ptr;
+      if(p->s.size == nunits) 
+        prevp->s.ptr = p->s.ptr; 
       else {
         p->s.size -= nunits;
-        p += p->s.size;
-        p->s.size = nunits;
+        p += p->s.size; 
+        p->s.size = nunits;//cause high va fault
       }
       freep = prevp;
       return (void*)(p + 1);

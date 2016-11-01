@@ -88,6 +88,19 @@ trap(struct trapframe *tf)
               tf->trapno, cpunum(), tf->eip, rcr2());
       panic("trap");
     }
+
+    //By jianzzz
+    //处理页错误T_PGFLT
+    if(tf->trapno == T_PGFLT){
+      //rcr2() --> 导致页错误的虚拟地址
+      uint va = rcr2();
+      uint sz = PGROUNDDOWN(va); 
+      cprintf( "T_PGFLT:%x\n",va);
+      if((sz = allocuvm(proc->pgdir, sz, sz + PGSIZE)) == 0)
+        panic("trap T_PGFLT");  
+      break;
+    }
+
     // In user space, assume process misbehaved.
     cprintf("pid %d %s: trap %d err %d on cpu %d "
             "eip 0x%x addr 0x%x--kill proc\n",
