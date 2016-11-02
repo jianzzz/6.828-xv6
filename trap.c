@@ -96,9 +96,11 @@ trap(struct trapframe *tf)
       uint va = rcr2();
       uint sz = PGROUNDDOWN(va); 
       cprintf( "T_PGFLT:%x\n",va);
-      if((sz = allocuvm(proc->pgdir, sz, sz + PGSIZE)) == 0)
-        panic("trap T_PGFLT");  
-      break;
+      if((sz = allocuvm(proc->pgdir, sz, sz + PGSIZE)) == 0){
+        cprintf("T_PGFLT, no more memory!\n");  
+      }else{
+        break;
+      }
     }
 
     // In user space, assume process misbehaved.

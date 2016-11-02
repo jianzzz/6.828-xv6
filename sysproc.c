@@ -53,6 +53,14 @@ sys_sbrk(void)
   addr = proc->sz; 
   //if(growproc(n) < 0)
   //  return -1;
+  if(n<0){
+    cprintf("sbrk, negative arguments!\n");
+    return -1;
+  }
+  if(proc->sz+n >= KERNBASE){
+    cprintf("sbrk, arguments are too large!\n");
+    return -1;
+  }
   proc->sz += n;
   return addr;
 }
