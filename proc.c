@@ -355,7 +355,7 @@ sched(void)
   if(!holding(&ptable.lock))
     panic("sched ptable.lock");
   if(cpu->ncli != 1)
-    panic("sched locks");
+    panic("sched locks"); // see in console.c
   if(proc->state == RUNNING)
     panic("sched running");
   if(readeflags()&FL_IF)
