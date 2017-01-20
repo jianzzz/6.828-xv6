@@ -107,7 +107,7 @@ trap(struct trapframe *tf)
       //rcr2() --> 导致页错误的虚拟地址
       uint va = rcr2();
       uint sz = PGROUNDDOWN(va); 
-      cprintf( "T_PGFLT:%x\n",va);
+      //cprintf( "T_PGFLT:%x\n",va);
       if((sz = allocuvm(proc->pgdir, sz, sz + PGSIZE)) == 0){
         cprintf("T_PGFLT, no more memory!\n");  
       }else{
