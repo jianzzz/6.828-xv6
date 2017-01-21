@@ -378,6 +378,31 @@ bmap(struct inode *ip, uint bn)
     return addr;
   }
 
+  //homework10
+  bn -= NINDIRECT; 
+  if(bn < NDBINDIRECT){ 
+    if((addr = ip->addrs[NINDIRECT+1]) == 0)
+      ip->addrs[NINDIRECT+1] = addr = balloc(ip->dev);
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    int first_block_index = bn/NINDIRECT;
+    if((addr = a[first_block_index]) == 0){
+      a[first_block_index] = addr = balloc(ip->dev);
+      log_write(bp); 
+    }
+    brelse(bp);
+
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+    int second_block_index = bn%NINDIRECT;
+    if((addr = a[second_block_index]) == 0){
+      a[second_block_index] = addr = balloc(ip->dev);
+      log_write(bp);
+    } 
+    brelse(bp);
+    return addr;
+  }      
+
   panic("bmap: out of range");
 }
 
